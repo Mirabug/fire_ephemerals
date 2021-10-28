@@ -7,11 +7,6 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-Notes:
-personal access token: until dec 31 21
-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
-
-
 standard library load
 ```{r}
 library(readr)
