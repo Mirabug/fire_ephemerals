@@ -7,10 +7,103 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-notes
-error when pushing
+Notes:
+personal access token: until dec 31 21
+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
 
->>> git push origin HEAD:refs/heads/main
-remote: Support for password authentication was removed on August 13, 2021. Please use a personal access token instead.
-remote: Please see https://github.blog/2020-12-15-token-authentication-requirements-for-git-operations/ for more information.
-fatal: Authentication failed for 'https://github.com/Mirabug/fire_ephemerals.git/'
+
+standard library load
+```{r}
+library(readr)
+library(dplyr)
+library(tidyverse)
+library(png)
+library(raster)
+library(rgdal)
+library(ggplot2)
+library(knitr)
+library(leaflet)
+library(maps)
+```
+
+
+Actinotus forsythii data was downloaded from ALA
+(this could also be turned into code that downlads straight from ala -although not particularly useful for non australian species)
+
+```{r}
+Actinotus_forsythii_alaobvs_28_10_21 <- read_csv("Actinotus_forsythii_alaobvs_28_10_21.csv")
+View(Actinotus_forsythii_alaobvs_28_10_21)
+
+Actinotus_forsythii <- dplyr::select(Actinotus_forsythii_alaobvs_28_10_21, raw_recordedBy, basisOfRecord, occurrenceRemarks, eventDate, year, month, day, habitat, stateProvince, locality, verbatimLocality, decimalLatitude, decimalLongitude)
+
+View(Actinotus_forsythii)
+```
+
+
+checking if lat long line up with what is expexted
+
+```{r}
+
+world <- map_data("world")
+
+ggplot() +
+  geom_map(
+    data = world, map = world,
+    aes(long, lat, map_id = region),
+    color = "white", fill = "lightgray", size = 0.1
+    ) +
+   theme_bw() +
+  geom_point(
+    data = Actinotus_forsythii,
+    aes(decimalLongitude, decimalLatitude),
+    alpha = 0.4, size = 0.1
+    ) + scale_x_continuous(limits = c(140,155)) + scale_y_continuous(limits = c(-40,-30))
+
+```
+
+
+next...
+
+Fire data needs to be attained
+
+Fire data will be a grid where as lat, long of species data is a point. not sure if this will cause issues. 
+
+Each location point has a date stamp. This date stap needs to be turned into a range and converted to the same format as the fire data date stamp. 
+
+True/false for each data point if fire occours in the agreed date range. 
+
+Percentage true false?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
