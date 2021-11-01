@@ -19,6 +19,8 @@ library(ggplot2)
 library(knitr)
 library(leaflet)
 library(maps)
+
+library(RColorBrewer)
 ```
 
 
@@ -71,18 +73,85 @@ Percentage true false?
 
 
 
+Using fire data from previous project (loaded into workspace from that project)
+preliminalrily shows that graphically where we see fire, the following year we see A. forsythii now to try and test this.
+
+
+```{r}
+fire_2003_true <- subset(fire_2003, layer > 0)
+
+Actinotus_forsythii_2003_burn <- subset(Actinotus_forsythii, year >2003 & year <2008)
+```
+
+
+```{r}
+ggplot() +
+  geom_map(
+    data = world, map = world,
+    aes(long, lat, map_id = region),
+    color = "black", fill = "white", size = 0.1
+    ) +
+   theme_bw() +
+  geom_point(
+    data = fire_2003_true,
+    aes(x, y, colour=layer),
+    alpha = 0.5, size = 1
+    ) + scale_x_continuous(limits = c(147.5,152.5)) + scale_y_continuous(limits = c(-40,-32.5)) + 
+  geom_point(
+    data = Actinotus_forsythii_2003_burn,
+    aes(decimalLongitude, decimalLatitude),
+   alpha =0.5, size = 1
+    ) + scale_x_continuous(limits = c(147.5,152.5)) + scale_y_continuous(limits = c(-40,-32.5))
+```
 
 
 
+firstly how do inflate fire data to be a range rather than a point?
+
+```{r}
+
+fire_2003_test <- fire_2003 
 
 
+xrange <- function(fire_data) {
+  fire_data %>%  mutate(xrange = x + 0.250) 
+}
+yrange <- function(fire_data) {
+  fire_data %>% mutate(yrange = y - 0.250)
+}
+fire_true <- function(fire_data) {
+  fire_data %>% mutate(fire_true = if_else (layer !=	0, TRUE, FALSE))
+}
 
 
+fire_2003_test <- xrange(fire_2003)
+fire_2003_test <- yrange(fire_2003_test)
+fire_2003_test <- fire_true(fire_2003_test)
 
 
+str(fire_2003_test)
+
+```
+
+ok, now I need to crass reference. 
+does point plant fit between x-xrange 
 
 
+give me fire_true where (decimallat is >yrange and <y) and (decimallong >xrange and <x)
 
+```{r}
+fire_true <- (Actinotus_forsythii_2003_burn$decimalLongitude > fire_2003_test$yrange 
+  & < fire_2003_test$y) &
+  (Actinotus_forsythii_2003_burn$decimalLatitude > fire_2003_test$xrange 
+  & < fire_2003_test$x)
+
+
+get_true <-function()
+  
+  
+fire_2003_test %<% left_join(Actinotus_forsythii_2003_burn, by = c())  
+
+```
 
 
 
