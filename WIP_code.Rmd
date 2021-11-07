@@ -172,21 +172,36 @@ burn_data <- function(year_month) {
   raster::stack(path) %>% 
     sum() %>%
     raster::as.data.frame(xy=TRUE) %>% 
-    as_tibble() 
+    as_tibble()
 }
+
+
+## rather this line in the load in function
+rename("burn_date" = "MCD64monthly.A", year_month , ".Win20.006.burndate.tif")
+## add "month" and "year" collum from title to make date change easier 
+
 
 fire_2000306 <- burn_data (2000306)
 
+fire_2000306 <-rename(fire_2000306, c("burn_date" = "MCD64monthly.A2000306.Win20.006.burndate"))
 
-fire_2000306$MCD64monthly.A2000306.Win20.006.burndate %>%
-  unique()
+
+##subset just for fire to make the dataset more mannageble
+fire_2000306_true <- subset(fire_2000306, burn_date > 0)
+
+
+
+
+##this bit is not working
+year_month <- function (df) {
+  df %>% 
+    mutate("year" = fire_"year_month"_true)
+}
+
 ```
 
 
 ```{r}
-fire_2000306_true <- subset(fire_2000306, MCD64monthly.A2000306.Win20.006.burndate > 0)
-
-
 
 ggplot() +
   geom_map(
@@ -202,6 +217,9 @@ ggplot() +
     ) + scale_x_continuous(limits = c(110,160)) + scale_y_continuous(limits = c(-45,0))
 ```
 
+
+turning species data into fire dates
+CODE NOT WORKING "Error in revalue(., month, c(`1` = "1", : x is not a factor or a character vector"
 ```{r}
 
 leap_years <- select(Actinotus_forsythii, year, month) %>%
@@ -223,7 +241,26 @@ nonleap_years <- select(Actinotus_forsythii, year, month) %>%
 
 
 
+turning fire data into normal dates
+```{r}
 
+# if leap year
+
+fire_2000306_date <- fire_2000306_true %>% 
+  select(x, y, burn_date) %>%
+  mutate(day=burn_date-306) %>%
+  mutate("month"= 11)
+
+
+# turning this into a function if month is already a collum
+date_function <- function(df) {
+  df %>% 
+    select(x, y, burn_date) %>%
+  mutate(day=burn_date-month) 
+}
+
+
+```
 
 
 
