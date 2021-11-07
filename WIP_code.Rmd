@@ -21,6 +21,10 @@ library(leaflet)
 library(maps)
 
 library(RColorBrewer)
+
+library(tiff)
+
+library(plyr)
 ```
 
 
@@ -137,6 +141,7 @@ ok, now I need to crass reference.
 does point plant fit between x-xrange 
 
 
+IGNORE THIS (code not runnin)
 give me fire_true where (decimallat is >yrange and <y) and (decimallong >xrange and <x)
 
 ```{r}
@@ -154,6 +159,67 @@ fire_2003_test %<% left_join(Actinotus_forsythii_2003_burn, by = c())
 ```
 
 
+
+Real modis data test with 2000 
+- all works but is very slow 
+
+```{r}
+
+burn_data <- function(year_month) {   
+  
+  path <- paste0("Win20/2000/MCD64monthly.A", year_month , ".Win20.006.burndate.tif")
+  
+  raster::stack(path) %>% 
+    sum() %>%
+    raster::as.data.frame(xy=TRUE) %>% 
+    as_tibble() 
+}
+
+fire_2000306 <- burn_data (2000306)
+
+
+fire_2000306$MCD64monthly.A2000306.Win20.006.burndate %>%
+  unique()
+```
+
+
+```{r}
+fire_2000306_true <- subset(fire_2000306, MCD64monthly.A2000306.Win20.006.burndate > 0)
+
+
+
+ggplot() +
+  geom_map(
+    data = world, map = world,
+    aes(long, lat, map_id = region),
+    color = "black", fill = "white", size = 0.1
+    ) +
+   theme_bw() +
+  geom_point(
+    data = fire_2000306_true,
+    aes(x, y, colour=MCD64monthly.A2000306.Win20.006.burndate),
+    alpha = 0.5, size = 1
+    ) + scale_x_continuous(limits = c(110,160)) + scale_y_continuous(limits = c(-45,0))
+```
+
+```{r}
+
+leap_years <- select(Actinotus_forsythii, year, month) %>%
+                    dplyr::filter(year == "2000" & year == "2004" & year == "2008" & year == "2012" & year == "2016" &
+                                    year == "2020") %>% 
+                    revalue(month, c("1" = "1", "2"="32", "3"="61", "4"="92", "5"="122", "6"="153", "7"="183", "8"="214",
+                                    "9"="245", "10"="275", "11"="306", "12"="336")) %>%
+                    mutate(date = month + day)
+nonleap_years <- select(Actinotus_forsythii, year, month) %>%
+                    dplyr::filter(year == "2001" & year == "2002" & year == "2003" & year == "2005" & year == "2006" &
+                                    year == "2007" & year == "2009" & year == "2010" & year == "2011" & year == "2013" & year == "2014" &
+                                    year == "2015" & year == "2017" & year == "2018" & year == "2019" & year == "2021") %>% 
+                    revalue(month, c("1" = "1", "2"="31", "3"="60", "4"="91", "5"="121", "6"="152", "7"="182", "8"="213",
+                                    "9"="244", "10"="274", "11"="305", "12"="335")) %>%
+                    mutate(date = month + day)
+
+
+```
 
 
 
