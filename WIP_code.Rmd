@@ -19,6 +19,7 @@ library(ggplot2)
 library(knitr)
 library(leaflet)
 library(maps)
+library(lubridate)
 
 library(RColorBrewer)
 
@@ -165,17 +166,65 @@ Real modis data test with 2000
 
 ```{r}
 
-burn_data <- function(year_month) {   
-  
-  path <- paste0("Win20/2000/MCD64monthly.A", year_month , ".Win20.006.burndate.tif")
-  
-  raster::stack(path) %>% 
-    sum() %>%
-    raster::as.data.frame(xy=TRUE) %>% 
-    as_tibble()
+#extract one month fire data for specific locations
+burn_data <- function(julian_date, year, species_df) {
+  path <-
+    paste0("Win20/2000/MCD64monthly.A",
+           year,
+           julian_date,
+           ".Win20.006.burndate.tif")
+  fire_raster <- raster::stack(path)
+  species_df$burn_data_julian_date <-
+    extract(fire_raster,
+            cbind(species_df$decimalLongitude, species_df$decimalLatitude))
+  species_df$fire_year <- year
+  fire_date <- as.Date(paste0(year, "-01-01"))
+  yday(fire_date) <- julian_date
+  species_df$fire_month <- month(fire_date)
+  return(species_df)
 }
 
+month_list <- list(306, 336)
+out <- lapply(month_list, burn_data, 2000, Actinotus_forsythii)
+fire_df <- bind_rows(out)
 
+
+
+
+
+
+
+
+
+
+#not working -- for dealing with dates later on
+fire_df <- raster::as.data.frame(fire_raster, xy = TRUE)
+fire_df_ss <- subset(fire_df, fire_df[, 3] > 0)
+fire_date <- as.Date(paste0(year, "-01-01"))
+fire_df_ss$julian_date <- julian_date
+fire_df_ss$day_of_month <- fire_df_ss[[3]] - fire_df_ss$julian_date +
+  1
+yday(fire_date) <- fire_df_ss[1, 3]
+fire_df_ss$month <- month(fire_date)
+fire_df_ss$year <- year
+fire_df_ss$comb_date <-
+  ymd(paste(
+    fire_df_ss$year,
+    fire_df_ss$month,
+    fire_df_ss$day_of_month,
+    sep = "-"
+  ))
+
+fire_df_ss %>%
+  dplyr::select(x, y, comb_date) -> fss
+fss <- data.frame(fss)
+    
+
+```
+
+
+
+```{r}
 ## rather this line in the load in function
 rename("burn_date" = "MCD64monthly.A", year_month , ".Win20.006.burndate.tif")
 
@@ -184,13 +233,13 @@ rename("burn_date" = "MCD64monthly.A", year_month , ".Win20.006.burndate.tif")
 ## add "month" and "year" collum from title to make date change easier 
 
 
-fire_2000306 <- burn_data (2000306)
+fire_2000306 <- burn_data (2000,306)
 
 fire_2000306 <-rename(fire_2000306, c("burn_date" = "MCD64monthly.A2000306.Win20.006.burndate"))
 
 
 ##subset just for fire to make the dataset more mannageble
-fire_2000306_true <- subset(fire_2000306, burn_date > 0)
+
 
 
 
