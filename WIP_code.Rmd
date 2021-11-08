@@ -141,7 +141,7 @@ ok, now I need to crass reference.
 does point plant fit between x-xrange 
 
 
-IGNORE THIS (code not runnin)
+IGNORE THIS for a minute (code not runnin)
 give me fire_true where (decimallat is >yrange and <y) and (decimallong >xrange and <x)
 
 ```{r}
@@ -178,6 +178,9 @@ burn_data <- function(year_month) {
 
 ## rather this line in the load in function
 rename("burn_date" = "MCD64monthly.A", year_month , ".Win20.006.burndate.tif")
+
+ # > from previous load in function {rename(mean_annual_precipitation = layer)}
+
 ## add "month" and "year" collum from title to make date change easier 
 
 
