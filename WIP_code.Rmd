@@ -36,7 +36,7 @@ Actinotus forsythii data was downloaded from ALA
 Actinotus_forsythii_alaobvs_28_10_21 <- read_csv("Actinotus_forsythii_alaobvs_28_10_21.csv")
 View(Actinotus_forsythii_alaobvs_28_10_21)
 
-Actinotus_forsythii <- dplyr::select(Actinotus_forsythii_alaobvs_28_10_21, raw_recordedBy, basisOfRecord, occurrenceRemarks, eventDate, year, month, day, habitat, stateProvince, locality, verbatimLocality, decimalLatitude, decimalLongitude)
+Actinotus_forsythii <- dplyr::select(Actinotus_forsythii_alaobvs_28_10_21, raw_recordedBy, basisOfRecord, year, month, day, verbatimLocality, decimalLatitude, decimalLongitude)
 
 View(Actinotus_forsythii)
 ```
@@ -165,7 +165,6 @@ Real modis data test with 2000
 - all works but is very slow 
 
 ```{r}
-
 #extract one month fire data for specific locations
 burn_data <- function(julian_date, year, species_df) {
   path <-
@@ -185,18 +184,85 @@ burn_data <- function(julian_date, year, species_df) {
 }
 
 month_list <- list(306, 336)
-out <- lapply(month_list, burn_data, 2000, Actinotus_forsythii)
+out <- lapply(month_list, burn_data, year, species_df)
+fire_df <- bind_rows(out)
+```
+
+
+```{r}
+burn_data <- function(julian_date, year, species_df) {
+  path<- paste0("Win20/2001/MCD64monthly.A2001001.Win20.006.burndate.tif")
+  
+## this bit of code is working if path year is specified
+  fire_raster <- raster::stack(path)
+  species_df$burn_data_julian_date <- raster::extract(fire_raster, cbind(species_df$decimalLongitude, species_df$decimalLatitude))
+  species_df$fire_year <- year
+  fire_date <- as.Date(paste0(year, "-01-01"))
+  yday(fire_date) <- julian_date
+  species_df$fire_month <- month(fire_date)
+  
+  
+  return(species_df)
+}
+
+month_list_nonleep <- list(001, 032, 060, 091, 121, 152, 182, 213, 244, 274, 305, 335)
+month_list_leep <- list(001, 032, 061, 092, 122, 153, 183, 214, 225, 274, 306, 336)
+
+
+# problem:: Error in h(simpleError(msg, call)) : 
+  # error in evaluating the argument 'y' in selecting a method for function 'extract': argument "species_df" is missing, with no default
+
+fire_df_2001 <- lapply(month_list_nonleep, burn_data, species_df) %>% 
+  bind_rows()
+
+
+out <- lapply(month_list_nonleep, burn_data, year, species_df)
 fire_df <- bind_rows(out)
 
+str(species_df)
+
+
+##problem path isnt working when year is specified twice?
+
+path<- paste0("Win20/2001/MCD64monthly.A2001001.Win20.006.burndate.tif")
+
+path <- paste0("Win20/", year, "/MCD64monthly.A", year, julian_date, ".Win20.006.burndate.tif")
+
+
+
+str(fire_raster)
+
+plot(fire_raster)
+
+
+
+ lat_long <- fire_raster %>% cbind(species_df$decimalLongitude, species_df$decimalLatitude)
+  
+  
+  species_df$burn_data_julian_date <- extract(lat_long)
+  
+species_df <- Actinotus_forsythii
+year <-2001
+julian_date <- 001
+
+
+species_df_2001_1 <- burn_data(001, 2001, Actinotus_forsythii)
+species_df_2001_2 <- burn_data(032, 2001, Actinotus_forsythii)
+
+
+spicies_df_all <- rbind(species_df_2001_1, species_df_2001_2)
+
+spicies_df_all <- left_join(species_df_2001_1, species_df_2001_2, by = c("decimalLatitude", "decimalLongitude"))
 
 
 
 
 
 
+```
 
 
-
+```{r}
 #not working -- for dealing with dates later on
 fire_df <- raster::as.data.frame(fire_raster, xy = TRUE)
 fire_df_ss <- subset(fire_df, fire_df[, 3] > 0)
@@ -315,7 +381,10 @@ date_function <- function(df) {
 ```
 
 
-
+this will clear your environment
+```{r}
+rm(list = ls())
+```
 
 
 
