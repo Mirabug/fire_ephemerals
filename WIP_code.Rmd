@@ -191,7 +191,7 @@ fire_df <- bind_rows(out)
 
 ```{r}
 burn_data <- function(julian_date, year, species_df) {
-  path<- paste0("Win20/2001/MCD64monthly.A2001001.Win20.006.burndate.tif")
+  path <- paste0("Win20/2001/MCD64monthly.A2001", julian_date, ".Win20.006.burndate.tif")
   
 ## this bit of code is working if path year is specified
   fire_raster <- raster::stack(path)
@@ -205,20 +205,37 @@ burn_data <- function(julian_date, year, species_df) {
   return(species_df)
 }
 
+
+
+
 month_list_nonleep <- list(001, 032, 060, 091, 121, 152, 182, 213, 244, 274, 305, 335)
 month_list_leep <- list(001, 032, 061, 092, 122, 153, 183, 214, 225, 274, 306, 336)
+year_list_nonleep <- list(2001, 2002, 2003, 2005, 2006, 2007, 2009, 2010, 2011, 2013, 2014, 2015, 2017, 2018, 2019, 2021)
+year_list_leep <- list(2000, 2004, 2008, 2012, 2016, 2020)
 
 
-# problem:: Error in h(simpleError(msg, call)) : 
-  # error in evaluating the argument 'y' in selecting a method for function 'extract': argument "species_df" is missing, with no default
 
-fire_df_2001 <- lapply(month_list_nonleep, burn_data, species_df) %>% 
-  bind_rows()
+## tring to write a loop within a loop
+fire_df <- function()
+  
+  
+  
+  month <- lapply(month_list_nonleep, burn_data, year, species_df)
+  year <- lapply() 
+   
 
 
+
+
+
+# this works somehow
 out <- lapply(month_list_nonleep, burn_data, year, species_df)
 fire_df <- bind_rows(out)
 
+```
+
+
+```{r}
 str(species_df)
 
 
@@ -253,11 +270,6 @@ species_df_2001_2 <- burn_data(032, 2001, Actinotus_forsythii)
 spicies_df_all <- rbind(species_df_2001_1, species_df_2001_2)
 
 spicies_df_all <- left_join(species_df_2001_1, species_df_2001_2, by = c("decimalLatitude", "decimalLongitude"))
-
-
-
-
-
 
 ```
 
