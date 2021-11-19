@@ -166,22 +166,46 @@ Real modis data test with 2000
 
 ```{r}
 #extract one month fire data for specific locations
-burn_data <- function(julian_date, year, species_df) {
-  path <-
-    paste0("Win20/2000/MCD64monthly.A",
-           year,
-           julian_date,
-           ".Win20.006.burndate.tif")
-  fire_raster <- raster::stack(path)
+burn_data <- function(path, species_df) {
+   all_numbers<-str_extract(path, "(?<=A)[0-9]*")
+   year<-substr(all_numbers, start = 1, stop = 4)
+   julian_date<-substr(all_numbers, start = 5, stop = 7)
+
+    fire_raster <- raster::stack(path)
   species_df$burn_data_julian_date <-
-    extract(fire_raster,
+    raster::extract(fire_raster,
             cbind(species_df$decimalLongitude, species_df$decimalLatitude))
   species_df$fire_year <- year
   fire_date <- as.Date(paste0(year, "-01-01"))
-  yday(fire_date) <- julian_date
+  yday(fire_date) <- as.numeric(julian_date)
+  species_df$fire_date <- fire_date
   species_df$fire_month <- month(fire_date)
   return(species_df)
 }
+
+
+list_of_files <- list.files("Win20", recursive =  TRUE, full.names = TRUE) %>% str_subset("burndate")
+
+test<-burn_data(list_of_files[[1]],Actinotus_forsythii)
+
+output<-lapply(list_of_files,burn_data,species_df=Actinotus_forsythii)
+big_df<-bind_rows(output)
+
+fire_only_records <- filter(big_df,burn_data_julian_date!=0 & year>=2000,year > fire_year)
+fire_only_records$collection_date <- ymd(paste(fire_only_records$year,fire_only_records$month,fire_only_records$day,sep="-")) 
+fire_only_records$date_differnce<-as.numeric(fire_only_records$collection_date-fire_only_records$fire_date)
+
+
+  fire_only_records %>% filter(date_differnce<600)->recent_fires
+  
+hist(recent_fires$date_differnce)
+
+
+
+
+library(stringr)
+?str_extract
+
 
 month_list <- list(306, 336)
 out <- lapply(month_list, burn_data, year, species_df)
