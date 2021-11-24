@@ -28,15 +28,6 @@ library(plyr)
 
 
 
-Species data:
-  As an example we use Actinotus forsythii data was downloaded from ALA
-you will need species data with - latitude and longditude location and date of record (day, month and year). It also useful to have location description. 
-
-```{r}
-Actinotus_forsythii_alaobvs_28_10_21 <- read_csv("Actinotus_forsythii_alaobvs_28_10_21.csv")
-
-Actinotus_forsythii <- dplyr::select(Actinotus_forsythii_alaobvs_28_10_21, raw_recordedBy, basisOfRecord, year, month, day, verbatimLocality, decimalLatitude, decimalLongitude)
-```
 
 
 Fire data:
@@ -67,7 +58,18 @@ burn_data <- function(path, species_df) {
 }
 ```
 
-Running the load in function
+
+Species data:
+  As an example we use Actinotus forsythii data was downloaded from ALA
+you will need species data with - latitude and longditude location and date of record (day, month and year). It also useful to have location description. 
+
+```{r}
+Actinotus_forsythii_alaobvs_28_10_21 <- read_csv("Actinotus_forsythii_alaobvs_28_10_21.csv")
+
+Actinotus_forsythii <- dplyr::select(Actinotus_forsythii_alaobvs_28_10_21, raw_recordedBy, basisOfRecord, year, month, day, verbatimLocality, decimalLatitude, decimalLongitude)
+```
+
+Running the load in function with apropriate species data
 ```{r}
 #List of file names
 list_of_files <- list.files("Win20", recursive =  TRUE, full.names = TRUE) %>% str_subset("burndate")
@@ -143,11 +145,19 @@ percentage_burnt <- (fire/total)*100
 
 
 hist(fire_only_records$date_differnce)
+ggsave("Swainsona_formosa_date_frequency.jpg")
 
 ```
 
 S. formosa came back 20% fire in the past 2 years however the overall histagram looks very different
 
 
+
+Extra notes
+```{r}
+Swainsona_formosa_fire_only_records <- fire_only_records
+Swainsona_formosa_recent_fires <- recent_fires
+
+```
 
 

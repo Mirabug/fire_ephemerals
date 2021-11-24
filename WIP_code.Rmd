@@ -174,7 +174,7 @@ burn_data <- function(path, species_df) {
     fire_raster <- raster::stack(path)
   species_df$burn_data_julian_date <-
     raster::extract(fire_raster,
-            cbind(species_df$decimalLongitude, species_df$decimalLatitude))
+            cbind(species_df$decimalLongitude, species_df$decimalLatitude), buffer=100)
   species_df$fire_year <- year
   fire_date <- as.Date(paste0(year, "-01-01"))
   yday(fire_date) <- as.numeric(julian_date)
@@ -186,7 +186,6 @@ burn_data <- function(path, species_df) {
 
 list_of_files <- list.files("Win20", recursive =  TRUE, full.names = TRUE) %>% str_subset("burndate")
 
-test<-burn_data(list_of_files[[1]],Actinotus_forsythii)
 
 output<-lapply(list_of_files,burn_data,species_df=Actinotus_forsythii)
 big_df<-bind_rows(output)
@@ -203,115 +202,34 @@ total <- nrow(Actinotus_forsythii)
 percentage_burnt <- (fire/total)*100
 
 
-
-
-
-
-
 ```
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+dethermoning_fire_ephemeral Maps!!
 
 ```{r}
-burn_data <- function(julian_date, year, species_df) {
-  path <- paste0("Win20/2001/MCD64monthly.A2001", julian_date, ".Win20.006.burndate.tif")
-  
-## this bit of code is working if path year is specified
-  fire_raster <- raster::stack(path)
-  species_df$burn_data_julian_date <- raster::extract(fire_raster, cbind(species_df$decimalLongitude, species_df$decimalLatitude))
-  species_df$fire_year <- year
-  fire_date <- as.Date(paste0(year, "-01-01"))
-  yday(fire_date) <- julian_date
-  species_df$fire_month <- month(fire_date)
-  
-  
-  return(species_df)
-}
 
 
+world <- map_data("world")
 
+ggplot() +
+  geom_map(
+    data = world, map = world,
+    aes(long, lat, map_id = region),
+    color = "black", fill = "white", size = 0.1
+    ) +
+   theme_bw() +
+  geom_point(
+    data = Actinotus_forsythii,
+    aes(decimalLongitude, decimalLatitude), size = 0.1) + 
+  scale_x_continuous(limits = c(147.5,152.5)) + scale_y_continuous(limits = c(-37.5,-32.5)) +
+  geom_point(
+    data = recent_fires,
+    aes(decimalLongitude, decimalLatitude, colour= fire_year),
+   size = 0.1
+    ) + scale_x_continuous(limits = c(147.5,152.5)) + scale_y_continuous(limits = c(-37.5,-32.5))
 
-month_list_nonleep <- list(001, 032, 060, 091, 121, 152, 182, 213, 244, 274, 305, 335)
-month_list_leep <- list(001, 032, 061, 092, 122, 153, 183, 214, 225, 274, 306, 336)
-year_list_nonleep <- list(2001, 2002, 2003, 2005, 2006, 2007, 2009, 2010, 2011, 2013, 2014, 2015, 2017, 2018, 2019, 2021)
-year_list_leep <- list(2000, 2004, 2008, 2012, 2016, 2020)
-
-
-
-## tring to write a loop within a loop
-fire_df <- function()
-  
-  
-  
-  month <- lapply(month_list_nonleep, burn_data, year, species_df)
-  year <- lapply() 
-   
-
-
-
-
-
-# this works somehow
-out <- lapply(month_list_nonleep, burn_data, year, species_df)
-fire_df <- bind_rows(out)
-
-```
-
-
-```{r}
-str(species_df)
-
-
-##problem path isnt working when year is specified twice?
-
-path<- paste0("Win20/2001/MCD64monthly.A2001001.Win20.006.burndate.tif")
-
-path <- paste0("Win20/", year, "/MCD64monthly.A", year, julian_date, ".Win20.006.burndate.tif")
-
-
-
-str(fire_raster)
-
-plot(fire_raster)
-
-
-
- lat_long <- fire_raster %>% cbind(species_df$decimalLongitude, species_df$decimalLatitude)
-  
-  
-  species_df$burn_data_julian_date <- extract(lat_long)
-  
-species_df <- Actinotus_forsythii
-year <-2001
-julian_date <- 001
-
-
-species_df_2001_1 <- burn_data(001, 2001, Actinotus_forsythii)
-species_df_2001_2 <- burn_data(032, 2001, Actinotus_forsythii)
-
-
-spicies_df_all <- rbind(species_df_2001_1, species_df_2001_2)
-
-spicies_df_all <- left_join(species_df_2001_1, species_df_2001_2, by = c("decimalLatitude", "decimalLongitude"))
 
 ```
 
@@ -319,31 +237,15 @@ spicies_df_all <- left_join(species_df_2001_1, species_df_2001_2, by = c("decima
 
 
 
-```{r}
-#not working -- for dealing with dates later on
-fire_df <- raster::as.data.frame(fire_raster, xy = TRUE)
-fire_df_ss <- subset(fire_df, fire_df[, 3] > 0)
-fire_date <- as.Date(paste0(year, "-01-01"))
-fire_df_ss$julian_date <- julian_date
-fire_df_ss$day_of_month <- fire_df_ss[[3]] - fire_df_ss$julian_date +
-  1
-yday(fire_date) <- fire_df_ss[1, 3]
-fire_df_ss$month <- month(fire_date)
-fire_df_ss$year <- year
-fire_df_ss$comb_date <-
-  ymd(paste(
-    fire_df_ss$year,
-    fire_df_ss$month,
-    fire_df_ss$day_of_month,
-    sep = "-"
-  ))
 
-fire_df_ss %>%
-  dplyr::select(x, y, comb_date) -> fss
-fss <- data.frame(fss)
-    
 
-```
+
+
+
+
+
+
+
 
 
 
