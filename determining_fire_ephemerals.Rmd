@@ -7,3 +7,147 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+
+standard library load
+```{r}
+library(readr)
+library(dplyr)
+library(tidyverse)
+library(png)
+library(raster)
+library(rgdal)
+library(ggplot2)
+library(knitr)
+library(leaflet)
+library(maps)
+library(lubridate)
+library(RColorBrewer)
+library(tiff)
+library(plyr)
+```
+
+
+
+Species data:
+  As an example we use Actinotus forsythii data was downloaded from ALA
+you will need species data with - latitude and longditude location and date of record (day, month and year). It also useful to have location description. 
+
+```{r}
+Actinotus_forsythii_alaobvs_28_10_21 <- read_csv("Actinotus_forsythii_alaobvs_28_10_21.csv")
+
+Actinotus_forsythii <- dplyr::select(Actinotus_forsythii_alaobvs_28_10_21, raw_recordedBy, basisOfRecord, year, month, day, verbatimLocality, decimalLatitude, decimalLongitude)
+```
+
+
+Fire data:
+   can be downloaded from here - (url)
+   It is modis data seperated into each month for each year from nov 2000 - 2021
+   Other fire data could be used with code modifications. 
+
+load in function
+```{r}
+burn_data <- function(path, species_df) {
+# Gathering all the file names
+   all_numbers<-str_extract(path, "(?<=A)[0-9]*")
+#Getting dates from file names
+   year<-substr(all_numbers, start = 1, stop = 4)
+   julian_date<-substr(all_numbers, start = 5, stop = 7)
+#Extracting fire dates for each observation location  
+    fire_raster <- raster::stack(path)
+  species_df$burn_data_julian_date <-
+    raster::extract(fire_raster,
+            cbind(species_df$decimalLongitude, species_df$decimalLatitude))
+#Formating fire data dates  
+  species_df$fire_year <- year
+  fire_date <- as.Date(paste0(year, "-01-01"))
+  yday(fire_date) <- as.numeric(julian_date)
+  species_df$fire_date <- fire_date
+  species_df$fire_month <- month(fire_date)
+  return(species_df)
+}
+```
+
+Running the load in function
+```{r}
+#List of file names
+list_of_files <- list.files("Win20", recursive =  TRUE, full.names = TRUE) %>% str_subset("burndate")
+
+#Large dataframe with all months/years at each observation location (fire and non-fire results)
+#Species_df can be changed to whichever species is being used
+output<-lapply(list_of_files, burn_data, species_df=Actinotus_forsythii)
+big_df<-bind_rows(output)
+
+#Subsetting for records where fire was present (and including location observation in the relervent timeframe)
+fire_only_records <- filter(big_df, burn_data_julian_date!=0 & year>=2000,year > fire_year)
+fire_only_records$collection_date <- ymd(paste(fire_only_records$year,fire_only_records$month,fire_only_records$day,sep="-")) 
+fire_only_records$date_differnce<-as.numeric(fire_only_records$collection_date-fire_only_records$fire_date)
+
+```
+
+calculations
+```{r}
+hist(fire_only_records$date_differnce)
+
+##2 years of fire history
+fire_only_records %>% filter(date_differnce<730)->recent_fires
+
+fire <- nrow(recent_fires)
+total <- nrow(Actinotus_forsythii)
+percentage_burnt <- (fire/total)*100
+
+```
+
+My A. forsythii data came back 37% fire present in the past two years
+
+
+
+
+
+
+
+
+
+
+
+
+
+running same code for Swainsona formosa
+
+```{r}
+Swainsona_formosa_records <- read_csv("Swainsona formosa_records-2021-11-24.csv")
+
+Swainsona_formosa <- dplyr::select(Swainsona_formosa_records, basisOfRecord, year, month, day, decimalLatitude, decimalLongitude)
+```
+
+```{r}
+#Large dataframe with all months/years at each observation location (fire and non-fire results)
+#Species_df can be changed to whichever species is being used
+output<-lapply(list_of_files, burn_data, species_df=Swainsona_formosa)
+big_df<-bind_rows(output)
+
+#Subsetting for records where fire was present (and including location observation in the relervent timeframe)
+fire_only_records <- filter(big_df, burn_data_julian_date!=0 & year>=2000,year > fire_year)
+fire_only_records$collection_date <- ymd(paste(fire_only_records$year,fire_only_records$month,fire_only_records$day,sep="-")) 
+fire_only_records$date_differnce<-as.numeric(fire_only_records$collection_date-fire_only_records$fire_date)
+
+```
+
+calculations
+```{r}
+##2 years of fire history
+fire_only_records %>% filter(date_differnce<730)->recent_fires
+
+fire <- nrow(recent_fires)
+total <- nrow(Swainsona_formosa)
+percentage_burnt <- (fire/total)*100
+
+
+hist(fire_only_records$date_differnce)
+
+```
+
+S. formosa came back 20% fire in the past 2 years however the overall histagram looks very different
+
+
+
+

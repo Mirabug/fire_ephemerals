@@ -38,8 +38,11 @@ View(Actinotus_forsythii_alaobvs_28_10_21)
 
 Actinotus_forsythii <- dplyr::select(Actinotus_forsythii_alaobvs_28_10_21, raw_recordedBy, basisOfRecord, year, month, day, verbatimLocality, decimalLatitude, decimalLongitude)
 
+Actinotus_forsythii <- dplyr::mutate(Actinotus_forsythii, id = row_number())
+
 View(Actinotus_forsythii)
 ```
+
 
 
 checking if lat long line up with what is expexted
@@ -161,11 +164,8 @@ fire_2003_test %<% left_join(Actinotus_forsythii_2003_burn, by = c())
 
 
 
-Real modis data test with 2000 
-- all works but is very slow 
-
 ```{r}
-#extract one month fire data for specific locations
+
 burn_data <- function(path, species_df) {
    all_numbers<-str_extract(path, "(?<=A)[0-9]*")
    year<-substr(all_numbers, start = 1, stop = 4)
@@ -196,21 +196,39 @@ fire_only_records$collection_date <- ymd(paste(fire_only_records$year,fire_only_
 fire_only_records$date_differnce<-as.numeric(fire_only_records$collection_date-fire_only_records$fire_date)
 
 
-  fire_only_records %>% filter(date_differnce<600)->recent_fires
-  
-hist(recent_fires$date_differnce)
+fire_only_records %>% filter(date_differnce<600)->recent_fires
+
+fire <- nrow(recent_fires)
+total <- nrow(Actinotus_forsythii)
+percentage_burnt <- (fire/total)*100
 
 
 
 
-library(stringr)
-?str_extract
 
 
-month_list <- list(306, 336)
-out <- lapply(month_list, burn_data, year, species_df)
-fire_df <- bind_rows(out)
+
 ```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ```{r}
@@ -298,6 +316,9 @@ spicies_df_all <- left_join(species_df_2001_1, species_df_2001_2, by = c("decima
 ```
 
 
+
+
+
 ```{r}
 #not working -- for dealing with dates later on
 fire_df <- raster::as.data.frame(fire_raster, xy = TRUE)
@@ -326,106 +347,25 @@ fss <- data.frame(fss)
 
 
 
-```{r}
-## rather this line in the load in function
-rename("burn_date" = "MCD64monthly.A", year_month , ".Win20.006.burndate.tif")
-
- # > from previous load in function {rename(mean_annual_precipitation = layer)}
-
-## add "month" and "year" collum from title to make date change easier 
-
-
-fire_2000306 <- burn_data (2000,306)
-
-fire_2000306 <-rename(fire_2000306, c("burn_date" = "MCD64monthly.A2000306.Win20.006.burndate"))
-
-
-##subset just for fire to make the dataset more mannageble
 
 
 
 
 
-##this bit is not working
-year_month <- function (df) {
-  df %>% 
-    mutate("year" = fire_"year_month"_true)
-}
-
-```
-
-
-```{r}
-
-ggplot() +
-  geom_map(
-    data = world, map = world,
-    aes(long, lat, map_id = region),
-    color = "black", fill = "white", size = 0.1
-    ) +
-   theme_bw() +
-  geom_point(
-    data = fire_2000306_true,
-    aes(x, y, colour=MCD64monthly.A2000306.Win20.006.burndate),
-    alpha = 0.5, size = 1
-    ) + scale_x_continuous(limits = c(110,160)) + scale_y_continuous(limits = c(-45,0))
-```
-
-
-turning species data into fire dates
-CODE NOT WORKING "Error in revalue(., month, c(`1` = "1", : x is not a factor or a character vector"
-```{r}
-
-leap_years <- select(Actinotus_forsythii, year, month) %>%
-                    dplyr::filter(year == "2000" & year == "2004" & year == "2008" & year == "2012" & year == "2016" &
-                                    year == "2020") %>% 
-                    revalue(month, c("1" = "1", "2"="32", "3"="61", "4"="92", "5"="122", "6"="153", "7"="183", "8"="214",
-                                    "9"="245", "10"="275", "11"="306", "12"="336")) %>%
-                    mutate(date = month + day)
-nonleap_years <- select(Actinotus_forsythii, year, month) %>%
-                    dplyr::filter(year == "2001" & year == "2002" & year == "2003" & year == "2005" & year == "2006" &
-                                    year == "2007" & year == "2009" & year == "2010" & year == "2011" & year == "2013" & year == "2014" &
-                                    year == "2015" & year == "2017" & year == "2018" & year == "2019" & year == "2021") %>% 
-                    revalue(month, c("1" = "1", "2"="31", "3"="60", "4"="91", "5"="121", "6"="152", "7"="182", "8"="213",
-                                    "9"="244", "10"="274", "11"="305", "12"="335")) %>%
-                    mutate(date = month + day)
-
-
-```
 
 
 
-turning fire data into normal dates
-```{r}
-
-# if leap year
-
-fire_2000306_date <- fire_2000306_true %>% 
-  select(x, y, burn_date) %>%
-  mutate(day=burn_date-306) %>%
-  mutate("month"= 11)
 
 
-# turning this into a function if month is already a collum
-date_function <- function(df) {
-  df %>% 
-    select(x, y, burn_date) %>%
-  mutate(day=burn_date-month) 
-}
 
 
-```
+
 
 
 this will clear your environment
 ```{r}
 rm(list = ls())
 ```
-
-
-
-
-
 
 
 
