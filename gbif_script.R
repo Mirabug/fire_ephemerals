@@ -3,29 +3,17 @@ library(raster)
 library(lubridate)
 #donkey <- read_csv("observations-201459.csv")
 #ducks <- read_csv("observations-201466.csv")
-lizards <- read_delim("0067310-210914110416597.csv")
-pinks <- read_delim("0067573-210914110416597.csv")
-flannel <- read_delim("0067517-210914110416597.csv")
-mistletoe <- read_delim("0067565-210914110416597.csv")
-christmas1 <- read_delim("0067620-210914110416597.csv")
-christmas2 <- read_delim("0067628-210914110416597.csv")
-ducks <- read_delim("0067624-210914110416597.csv")
-bitou <- read_delim("0067720-210914110416597.csv")
-cheese <- read_delim("0067724-210914110416597.csv")
+
+list_of_gbif_files <-
+  list.files("data/gbif", recursive =  TRUE, full.names = TRUE) %>% str_subset("210914110416597")
+
+
 
 all <-
-  bind_rows(flannel,
-            mistletoe,
-            pinks,
-            christmas1,
-            christmas2,
-            ducks,
-            bitou,
-            cheese,
-            lizards)
+  bind_rows(lapply(list_of_gbif_files,read_delim))
 
 
-burn_data_gbif <- function(path, species_df, buffer_size = 2000) {
+burn_data_gbif <- function(path, species_df, buffer_size = 1000) {
   require(sf)
   require(lubridate)
   species_df <- dplyr::filter(species_df, !is.na(decimalLatitude))
@@ -64,8 +52,8 @@ calculate_burn_obs <-
            species_df = species_df,
            cores = 1) {
     require(parallel)
-    species_df <- dplyr::filter(species_df, year >= 2002) %>%
-      dplyr::filter(coordinateUncertaintyInMeters < 2000 |
+    species_df <- dplyr::filter(species_df, year >= 2003) %>%
+      dplyr::filter(coordinateUncertaintyInMeters < 1000 |
                       is.na(coordinateUncertaintyInMeters))
     output <-
       mclapply(list_of_files,
@@ -88,22 +76,35 @@ calculate_burn_obs <-
     return(most_recent_fire_per_obs)
   }
 
-one <- calculate_burn_obs(list_of_files, species_df = all)
+one <- calculate_burn_obs(list_of_files, species_df = all,cores = 4)
 
 one %>%
-  mutate(fire = (date_difference < 730)) %>%
+  mutate(fire = (date_difference < 1825)) %>%
   mutate(sp = word(scientificName, 1, 2)) %>%
   ggplot(aes(x = as_date(eventDate), fill = fire)) + geom_histogram() +
   facet_grid(sp ~ ., scales = "free")
-ggsave("fire_yes.png", height = 11, width = 3)
+ggsave("fire_yes.png", height = 11, width = 6)
 
-one %>% dplyr::filter(date_difference < 730) %>%
+one %>% dplyr::filter(date_difference < 1825) %>%
   mutate(sp = word(scientificName, 1, 2)) %>%
   ggplot(aes(x = date_difference, fill = year)) + geom_histogram() + facet_grid(sp ~
                                                                                   ., scales = "free")
-ggsave("juve.png", height = 11, width = 3)
+ggsave("juve.png", height = 11, width = 4)
 
 one %>%
   group_by(word(scientificName, 1, 2)) %>%
-  summarise(prop_fire = sum(date_difference < 730) / n()) %>%
+  summarise(prop_fire = sum(date_difference < 1825) / n()) %>%
   arrange(prop_fire)
+
+
+one %>% dplyr::filter(date_difference < 1825) %>%
+  mutate(sp = word(scientificName, 1, 2)) %>%
+  mutate(date_difference_years = date_difference/365.25) %>%
+  dplyr::filter(sp %in% c("Androcalva rosea","Actinotus forsythii","Caleana major","Burnettia cuneata","Blandfordia grandiflora","Actinotus helianthi")) %>%
+  ggplot(aes(x = date_difference_years, fill = year)) + 
+  geom_histogram() + facet_grid(sp ~ ., scales = "free")+
+  theme_bw()+xlab("Time from fire to collection / observation (years)")
+ggsave("selected_species.png",height=11,width=6)
+
+
+
