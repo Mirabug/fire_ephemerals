@@ -5,9 +5,11 @@ library(lubridate)
 #ducks <- read_csv("observations-201466.csv")
 
 list_of_gbif_files <-
-  list.files("data/gbif", recursive =  TRUE, full.names = TRUE) %>% str_subset("210914110416597")
+  list.files("data/gbif/", full.names = TRUE) %>% str_subset("210914110416597")
 
 
+
+read_delim("data/gbif/Fire ephemeral species/0070546-210914110416597.csv")
 
 all <-
   bind_rows(lapply(list_of_gbif_files,read_delim))
@@ -67,41 +69,48 @@ calculate_burn_obs <-
     big_df$date_differnce[big_df$date_differnce < 0] <- NA
     
     big_df %>%
-      group_by(scientificName,
+      group_by(species,
                occurrenceID,
                eventDate,
                coordinateUncertaintyInMeters,
+               countryCode,
                year) %>%
       summarize(date_difference = min(date_differnce, na.rm = T)) -> most_recent_fire_per_obs
     return(most_recent_fire_per_obs)
   }
 
-one <- calculate_burn_obs(list_of_files, species_df = all,cores = 4)
+
+androclava<-filter(all,genus=="Androcalva")
+one <- calculate_burn_obs(list_of_files, species_df = androclava,cores = 4)
 
 one %>%
   mutate(fire = (date_difference < 1825)) %>%
-  mutate(sp = word(scientificName, 1, 2)) %>%
+  mutate(sp = word(species, 1, 2)) %>%
   ggplot(aes(x = as_date(eventDate), fill = fire)) + geom_histogram() +
   facet_grid(sp ~ ., scales = "free")
-ggsave("fire_yes.png", height = 11, width = 6)
+ggsave("fire_yes.png", height = 20, width = 4)
+
+
+
 
 one %>% dplyr::filter(date_difference < 1825) %>%
+  mutate(date_difference_months = date_difference/365.25*12) %>%
   mutate(sp = word(scientificName, 1, 2)) %>%
-  ggplot(aes(x = date_difference, fill = year)) + geom_histogram() + facet_grid(sp ~
+  ggplot(aes(x = date_difference_months)) + geom_histogram() + facet_grid(sp ~
                                                                                   ., scales = "free")
-ggsave("juve.png", height = 11, width = 4)
+ggsave("juve.png", height = 20, width = 4)
 
 one %>%
-  group_by(word(scientificName, 1, 2)) %>%
-  summarise(prop_fire = sum(date_difference < 1825) / n()) %>%
-  arrange(prop_fire)
+  group_by(sp=word(species, 1, 2)) %>%
+  summarise(prop_fire = sum(date_difference < 1825) / n(),n=n()) %>%
+  arrange(prop_fire)->out
 
 
 one %>% dplyr::filter(date_difference < 1825) %>%
-  mutate(sp = word(scientificName, 1, 2)) %>%
+  mutate(sp = word(species, 1, 2)) %>%
   mutate(date_difference_years = date_difference/365.25) %>%
-  dplyr::filter(sp %in% c("Androcalva rosea","Actinotus forsythii","Caleana major","Burnettia cuneata","Blandfordia grandiflora","Actinotus helianthi")) %>%
-  ggplot(aes(x = date_difference_years, fill = year)) + 
+  dplyr::filter(sp %in% c("Androcalva rosea","Androcalva reticulata","Androcalva pearnii","Androcalva loxophylla")) %>%
+  ggplot(aes(x = date_difference_years)) + 
   geom_histogram() + facet_grid(sp ~ ., scales = "free")+
   theme_bw()+xlab("Time from fire to collection / observation (years)")
 ggsave("selected_species.png",height=11,width=6)
